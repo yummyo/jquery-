@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="css/boot/bootstrap3.0.min.css">
+  <style>
+   #test{
+    padding:5rem;
+   }
+   .box{
+    border: 1px solid #c4c1c1;
+    display: inline-block;
+    padding:1rem;
+    border-radius: 5px;
+    font-size: 0;
+    width: 100%;
+    height:100%;
+   }
+   .box p{
+    font-size: 1rem;
+    padding: 1rem;
+   }
+   #files {
+    display: none;
+   }
+   #fileLabel:hover,#fileLabel.active{
+    padding:10px;
+    border:2px dashed #c4c1c1;
+   }
+   #fileLabel{
+    display: block;
+    min-width: 20rem;
+    height:100%;
+    padding:10px;
+    border:1px dashed #c4c1c1;
+    border-radius: 5px;
+    margin:0;
+    font-size: 1rem;
+   }
+   .label_content{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+   }
+   .label_content>div{
+    color: #ddd;
+    font-size: 1.6rem;
+   }
+
+   .label_file{
+    height:100%;
+   }
+   .file_icon{
+    height:75%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+   }
+   .file_icon span{
+    font-size: 9rem;
+   }
+
+  </style>
+  <title>Document</title>
+ </head>
+ <body>
+ <div id="test"></div>
+
+  <script src="js/jquery.min.js"></script>
+<script>
+  class setFileUpload{
+      constructor(DOM){
+          this.DOM = DOM;
+          //文件上传状态
+          this.fileStatus = false;
+          //文件格式是否正确
+          this.fileTypeStatus = false;
+          this.option = {
+              'fileType':['xls','xlsx']
+          }
+          this.file = null;
+          this.init();
+      }
+      init(){
+          //拼装页面
+          this.joinPage();
+          //绑定事件
+          this.bindEvent();
+      }
+      joinPage(){
+        let _html = `
+        <div class="box">
+         <label id="fileLabel" for="files">
+          <div class="label_content">
+           <div class="file-drop-zone-title text-center">拖拽文件到这里 …<br>支持多文件同时上传<br>(或点击个文件按钮选择文件)</div>
+          </div>
+          <div class="label_file text-center hide">
+           <div class="file_icon ">
+            <span class="file-other-icon">
+             <i class="glyphicon glyphicon-file"></i>
+            </span>
+           </div>
+           <div class="file_name"></div>
+           <div class="file_size"></div>
+          </div>
+         </label>
+         <p class="bg-danger alertInfo hide"></p>
+         <input type="file" id="files" name="files[]" multiple />
+        </div>
+        `;
+          this.DOM.append(_html);
+      }
+      isStatusChange(){
+          //判断文件上传状态
+          if(!this.fileStatus){
+              $('.label_content').removeClass('hide');
+              $('.label_file').addClass('hide');
+          }else{
+              //如果已上传文件
+              $('.label_content').addClass('hide');
+              $('.label_file').removeClass('hide');
+              //验证文件格式
+              this.fileTypeVerifi($('.file_name').text())
+          }
+      }
+      fileTypeVerifi(fileName){
+          //验证文件类型  info文件名称
+          let that = this,
+              isOk = true,
+              Rex = '';
+          $.each(that.option['fileType'],(i,v) => {
+              if(i == 0){
+                  Rex += v;
+              }else{
+                  Rex += "|"+v;
+              }
+          })
+          var reg = new RegExp(`\\.(${Rex})$`);
+          if(!reg.test(fileName)){
+              isOk = false;
+          }
+          this.fileTypeStatus = isOk;
+          //验证结果通过提示消息展示
+          that.showInfo(true,isOk);
+          return isOk;
+      }
+      showInfo(showType,Filetype){
+          //提示消息的显示隐藏
+         if(showType){
+             $('.alertInfo').removeClass('hide');
+             if(Filetype){
+                 $('.alertInfo').removeClass('bg-danger').addClass('bg-success');
+                 $('.alertInfo').text(`上传文件(${$('.file_name').text()})成功！`)
+             }else{
+                 $('.alertInfo').removeClass('bg-success').addClass('bg-danger');
+                 $('.alertInfo').text(`上传文件(${$('.file_name').text()})类型错误，支持格式：${this.option['fileType']}`)
+             }
+         }else{
+             $('.alertInfo').addClass('hide');
+         }
+      }
+      getImg(){
+          return {
+              status : this.fileTypeStatus,
+              file : this.file
+          }
+      }
+      bindEvent(){
+          //绑定事件
+          let that = this;
+          $("#fileLabel").on("dragover",function(e){
+              e.preventDefault();
+              $(this).addClass("active");
+          })
+          $("#fileLabel").on("dragleave",function(e){
+              e.preventDefault();
+              $(this).removeClass("active");
+          })
+          $("#fileLabel").on("drop",function(e){
+              e.preventDefault();
+              console.log(e.dataTransfer.files)
+              that.disposeFile(e.dataTransfer.files)
+              $(this).removeClass("active");
+          })
+          $("#files").change(function(evt){
+              that.disposeFile(evt.target.files)
+          });
+      }
+      disposeFile(files){
+          let that = this;
+          //处理文件
+          if(files.length>0){
+              $(".file_name").text(files[0]['name']);
+              $(".file_size").text("("+(files[0]['size']*1/1024).toFixed(2)+"KB)");
+              that.fileStatus = true;
+              //验证文件类型
+              that.fileTypeVerifi(files[0]['name']);
+              that.file = files;
+          }
+          that.isStatusChange();
+      }
+
+  }
+  new setFileUpload($('#test'));
+
+</script>
+ </body>
+</html>
